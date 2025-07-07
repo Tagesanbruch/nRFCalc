@@ -4,10 +4,13 @@ cmake_minimum_required(VERSION 3.20.0)
 find_package(Zephyr REQUIRED HINTS $ENV{ZEPHYR_BASE})
 project(display)
 
-target_sources(app PRIVATE 
-    src/main.c
-    src/display_engine.c
-    src/keypad_handler.c
-    src/calculator_core.c
-    src/font_data.c
-    )
+# Automatically find all C source files in src/ and subdirectories
+file(GLOB_RECURSE APP_SOURCES 
+    src/*.c
+)
+
+# Add all discovered source files to the target
+target_sources(app PRIVATE ${APP_SOURCES})
+
+# Optional: Print discovered source files for debugging (can be removed later)
+message(STATUS "Discovered source files: ${APP_SOURCES}")

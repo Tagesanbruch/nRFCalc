@@ -40,7 +40,7 @@ static void posix_exit_main(int exit_code)
 
 int main(void)
 {
-	struct calculator calc;
+	calculator_t calc;
 
 	LOG_INF("Starting Scientific Calculator application");
 
@@ -69,6 +69,9 @@ int main(void)
 		key_code_t key = keypad_get_key();
 
 		// 2. Update state and data (process key press)
+		if (key != KEY_NONE) {
+			LOG_INF("Processing key: %d", key);
+		}
 		calculator_update_state(&calc, key);
 
 		// 3. Render UI

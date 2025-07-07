@@ -18,17 +18,28 @@
 int display_engine_init(void);
 
 /**
- * @brief Clear the entire display with background color
+ * @brief Clear the entire display with specified color
+ * @param color Background color (0 for default background)
  */
-void display_engine_clear(void);
+void display_engine_clear(uint32_t color);
 
 /**
- * @brief Draw text at specified position
+ * @brief Draw text at specified position with color
+ * @param text Text string to draw
  * @param x X coordinate (pixels)
  * @param y Y coordinate (pixels) 
- * @param str Null-terminated string to draw
+ * @param color Text color
  */
-void display_engine_draw_text(int x, int y, const char *str);
+void display_engine_draw_text(const char *text, int x, int y, uint32_t color);
+
+/**
+ * @brief Draw large text at specified position with color
+ * @param text Text string to draw
+ * @param x X coordinate (pixels)
+ * @param y Y coordinate (pixels) 
+ * @param color Text color
+ */
+void display_engine_draw_text_large(const char *text, int x, int y, uint32_t color);
 
 /**
  * @brief Draw a filled rectangle
@@ -41,9 +52,32 @@ void display_engine_draw_text(int x, int y, const char *str);
 void display_engine_draw_rect(int x, int y, int w, int h, uint32_t color);
 
 /**
+ * @brief Fill a rectangle with specified color
+ * @param x X coordinate (pixels)
+ * @param y Y coordinate (pixels)
+ * @param w Width (pixels)
+ * @param h Height (pixels)
+ * @param color Fill color
+ */
+void display_engine_fill_rect(int x, int y, int w, int h, uint32_t color);
+
+/**
+ * @brief Set a single pixel
+ * @param x X coordinate (pixels)
+ * @param y Y coordinate (pixels)
+ * @param color Pixel color
+ */
+void display_engine_set_pixel(int x, int y, uint32_t color);
+
+/**
  * @brief Present/flush all drawing operations to the display
  */
 void display_engine_present(void);
+
+/**
+ * @brief Update/present the display
+ */
+void display_engine_update(void);
 
 /**
  * @brief Get display width in pixels

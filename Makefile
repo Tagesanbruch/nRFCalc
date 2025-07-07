@@ -8,6 +8,10 @@ ZEPHYR_APP_EXE = $(ZEPHYR_APP_DIR)/display/zephyr/zephyr.exe
 VENV_DIR = .venv
 WEB_DIR = web
 
+# Find all source files for dependency checking
+SRC_FILES := $(shell find src -name "*.c" -o -name "*.h")
+CONFIG_FILES := prj.conf CMakeLists.txt $(shell find boards -name "*.conf" -o -name "*.overlay" 2>/dev/null)
+
 # Default target
 .PHONY: all
 all: zephyr
@@ -22,10 +26,17 @@ keypad_simulator:
 .PHONY: zephyr
 zephyr: $(ZEPHYR_APP_EXE)
 
-$(ZEPHYR_APP_EXE):
+$(ZEPHYR_APP_EXE): $(SRC_FILES) $(CONFIG_FILES)
 	@echo "Building Zephyr application..."
 	west build -b native_sim
 	@echo "Zephyr application built successfully!"
+
+# Force rebuild (useful when Make doesn't detect changes properly)
+.PHONY: rebuild
+rebuild:
+	@echo "Force rebuilding Zephyr application..."
+	west build -b native_sim
+	@echo "Zephyr application rebuilt successfully!"
 
 # Run both applications
 .PHONY: run

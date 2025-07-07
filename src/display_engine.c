@@ -114,6 +114,7 @@ int display_engine_init(void)
     frame_buffer_size = capabilities.x_resolution * capabilities.y_resolution;
 
     // Setup pixel format specific parameters
+    LOG_INF("Setting up pixel format: %d", capabilities.current_pixel_format);
     switch (capabilities.current_pixel_format) {
     case PIXEL_FORMAT_ARGB_8888:
         fill_buffer_fnc = fill_buffer_argb8888;
@@ -171,122 +172,127 @@ int display_engine_init(void)
     buf_desc.frame_incomplete = false;
 
     // Clear display and turn it on
-    display_engine_clear();
+    display_engine_clear(0x000000); // Clear with black background
     display_blanking_off(display_dev);
 
     LOG_INF("Display engine initialized successfully");
     return 0;
 }
 
-void display_engine_clear(void)
+void display_engine_clear(uint32_t color)
 {
-    if (!fill_buffer_fnc) {
+    if (!display_dev || !fill_buffer_fnc) {
         return;
     }
     
-    fill_buffer_fnc(bg_color, frame_buffer, frame_buffer_size);
+    fill_buffer_fnc(color, frame_buffer, frame_buffer_size);
+    bg_color = color;
 }
 
-void display_engine_draw_text(int x, int y, const char *str)
+// Helper function to draw a single character
+static void draw_char(char ch, int x, int y, uint32_t color)
 {
-    if (!str) {
+    const uint8_t *char_data = font_get_char_data(ch);
+    if (!char_data) {
         return;
     }
-
-    int cursor_x = x;
-    int cursor_y = y;
     
-    while (*str) {
-        if (*str == '\n') {
-            cursor_x = x;
-            cursor_y += FONT_HEIGHT + 1;
-            str++;
-            continue;
-        }
-
-        // Check bounds
-        if (cursor_x + FONT_WIDTH >= capabilities.x_resolution ||
-            cursor_y + FONT_HEIGHT >= capabilities.y_resolution) {
-            break;
-        }
-
-        const uint8_t *char_data = font_get_char_data(*str);
-        
-        // Draw character pixel by pixel
-        for (int row = 0; row < FONT_HEIGHT; row++) {
-            uint8_t row_data = char_data[row];
-            for (int col = 0; col < FONT_WIDTH; col++) {
-                if (row_data & (0x10 >> col)) { // MSB first
-                    // Draw foreground pixel
-                    int px = cursor_x + col;
-                    int py = cursor_y + row;
-                    
-                    // Simple pixel drawing for different formats
-                    switch (capabilities.current_pixel_format) {
-                    case PIXEL_FORMAT_ARGB_8888: {
-                        uint32_t *pixel = (uint32_t*)(frame_buffer + 
-                            (py * capabilities.x_resolution + px) * 4);
-                        *pixel = fg_color;
-                        break;
-                    }
-                    case PIXEL_FORMAT_RGB_888: {
-                        uint8_t *pixel = frame_buffer + 
-                            (py * capabilities.x_resolution + px) * 3;
-                        pixel[0] = (fg_color >> 16) & 0xFF;
-                        pixel[1] = (fg_color >> 8) & 0xFF;
-                        pixel[2] = fg_color & 0xFF;
-                        break;
-                    }
-                    case PIXEL_FORMAT_RGB_565:
-                    case PIXEL_FORMAT_BGR_565: {
-                        uint16_t *pixel = (uint16_t*)(frame_buffer + 
-                            (py * capabilities.x_resolution + px) * 2);
-                        *pixel = (uint16_t)fg_color;
-                        break;
-                    }
-                    case PIXEL_FORMAT_MONO01:
-                    case PIXEL_FORMAT_MONO10: {
-                        // Simplified monochrome pixel setting
-                        int bit_index = py * capabilities.x_resolution + px;
-                        int byte_index = bit_index / 8;
-                        int bit_offset = bit_index % 8;
-                        if (fg_color) {
-                            frame_buffer[byte_index] |= (1 << (7 - bit_offset));
-                        } else {
-                            frame_buffer[byte_index] &= ~(1 << (7 - bit_offset));
-                        }
-                        break;
-                    }
-                    }
-                }
+    for (int row = 0; row < FONT_HEIGHT; row++) {
+        uint8_t row_data = char_data[row];
+        for (int col = 0; col < FONT_WIDTH; col++) {
+            if (row_data & (0x10 >> col)) {  // Check bits 4,3,2,1,0 for 5-bit font
+                display_engine_set_pixel(x + col, y + row, color);
             }
         }
-
-        cursor_x += FONT_WIDTH + 1; // Add spacing between characters
-        str++;
     }
 }
 
-void display_engine_draw_rect(int x, int y, int w, int h, uint32_t color)
+// Helper function to draw a large character (2x scale)
+static void draw_char_large(char ch, int x, int y, uint32_t color)
 {
-    if (!fill_buffer_fnc) {
+    const uint8_t *char_data = font_get_char_data(ch);
+    if (!char_data) {
         return;
     }
-
-    // Clip to display bounds
-    if (x < 0) { w += x; x = 0; }
-    if (y < 0) { h += y; y = 0; }
-    if (x + w > capabilities.x_resolution) { w = capabilities.x_resolution - x; }
-    if (y + h > capabilities.y_resolution) { h = capabilities.y_resolution - y; }
     
-    if (w <= 0 || h <= 0) {
+    for (int row = 0; row < FONT_HEIGHT; row++) {
+        uint8_t row_data = char_data[row];
+        for (int col = 0; col < FONT_WIDTH; col++) {
+            if (row_data & (0x10 >> col)) {  // Check bits 4,3,2,1,0 for 5-bit font
+                // Draw 2x2 pixel block
+                int px = x + (col * 2);
+                int py = y + (row * 2);
+                display_engine_set_pixel(px, py, color);
+                display_engine_set_pixel(px + 1, py, color);
+                display_engine_set_pixel(px, py + 1, color);
+                display_engine_set_pixel(px + 1, py + 1, color);
+            }
+        }
+    }
+}
+
+void display_engine_draw_text(const char *text, int x, int y, uint32_t color)
+{
+    if (!text || !display_dev) {
         return;
     }
-
-    // Simple implementation: draw line by line
-    for (int row = 0; row < h; row++) {
-        int py = y + row;
+    
+    int char_x = x;
+    int char_y = y;
+    
+    for (const char *p = text; *p; p++) {
+        if (*p == '\n') {
+            char_y += FONT_HEIGHT + 2;
+            char_x = x;
+            continue;
+        }
         
+        draw_char(*p, char_x, char_y, color);
+        char_x += FONT_WIDTH;
+    }
+}
+
+void display_engine_draw_text_large(const char *text, int x, int y, uint32_t color)
+{
+    if (!text || !display_dev) {
+        return;
+    }
+    
+    int char_x = x;
+    int char_y = y;
+    
+    for (const char *p = text; *p; p++) {
+        if (*p == '\n') {
+            char_y += (FONT_HEIGHT * 2) + 4;
+            char_x = x;
+            continue;
+        }
+        
+        draw_char_large(*p, char_x, char_y, color);
+        char_x += FONT_WIDTH * 2;
+    }
+}
+
+void display_engine_fill_rect(int x, int y, int w, int h, uint32_t color)
+{
+    if (!display_dev) {
+        return;
+    }
+    
+    // Bounds checking
+    if (x < 0 || y < 0 || x >= capabilities.x_resolution || y >= capabilities.y_resolution) {
+        return;
+    }
+    
+    if (x + w > capabilities.x_resolution) {
+        w = capabilities.x_resolution - x;
+    }
+    if (y + h > capabilities.y_resolution) {
+        h = capabilities.y_resolution - y;
+    }
+    
+    // Draw filled rectangle
+    for (int py = y; py < y + h; py++) {
         switch (capabilities.current_pixel_format) {
         case PIXEL_FORMAT_ARGB_8888: {
             uint32_t *line = (uint32_t*)(frame_buffer + 
@@ -322,13 +328,54 @@ void display_engine_draw_rect(int x, int y, int w, int h, uint32_t color)
     }
 }
 
+void display_engine_set_pixel(int x, int y, uint32_t color)
+{
+    if (!display_dev || x < 0 || y < 0 || 
+        x >= capabilities.x_resolution || y >= capabilities.y_resolution) {
+        return;
+    }
+    
+    switch (capabilities.current_pixel_format) {
+    case PIXEL_FORMAT_ARGB_8888: {
+        uint32_t *pixel = (uint32_t*)(frame_buffer + 
+            y * capabilities.x_resolution * 4 + x * 4);
+        *pixel = color;
+        break;
+    }
+    case PIXEL_FORMAT_RGB_888: {
+        uint8_t *pixel = frame_buffer + 
+            y * capabilities.x_resolution * 3 + x * 3;
+        pixel[0] = (color >> 16) & 0xFF;
+        pixel[1] = (color >> 8) & 0xFF;
+        pixel[2] = color & 0xFF;
+        break;
+    }
+    case PIXEL_FORMAT_RGB_565:
+    case PIXEL_FORMAT_BGR_565: {
+        uint16_t *pixel = (uint16_t*)(frame_buffer + 
+            y * capabilities.x_resolution * 2 + x * 2);
+        *pixel = (uint16_t)color;
+        break;
+    }
+    default:
+        // Monochrome formats - simplified implementation
+        break;
+    }
+}
+
 void display_engine_present(void)
 {
-    if (!display_dev || !frame_buffer) {
+    if (!display_dev || frame_buffer_size == 0) {
         return;
     }
     
     display_write(display_dev, 0, 0, &buf_desc, frame_buffer);
+}
+
+void display_engine_update(void)
+{
+    // Update/present the display buffer to the screen
+    display_engine_present();
 }
 
 int display_engine_get_width(void)
