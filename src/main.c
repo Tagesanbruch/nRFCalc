@@ -74,8 +74,8 @@ int main(void)
 		// 3. Render UI
 		calculator_render_ui(&calc);
 
-		// 4. Yield to other threads
-		k_msleep(20);
+		// 4. Yield to other threads - reduced for better responsiveness
+		k_msleep(10);
 	}
 
 #ifdef CONFIG_ARCH_POSIX

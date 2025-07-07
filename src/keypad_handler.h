@@ -28,10 +28,19 @@ typedef enum {
     KEY_DOT,       // .
     KEY_BACKSPACE, // Del
     
-    // Function keys (for future expansion)
-    KEY_SIN, KEY_COS, KEY_TAN,
-    KEY_LOG, KEY_LN,
-    KEY_SQRT, KEY_POWER,
+    // Scientific functions
+    KEY_SIN,
+    KEY_COS,
+    KEY_TAN,
+    KEY_LOG,
+    KEY_LN,
+    KEY_SQRT,
+    KEY_POWER,
+    KEY_FACTORIAL,
+    KEY_PI,
+    KEY_E,
+    KEY_PAREN_LEFT,
+    KEY_PAREN_RIGHT,
     
     KEY_MAX
 } key_code_t;
