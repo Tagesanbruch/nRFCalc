@@ -24,23 +24,28 @@ typedef enum {
     KEY_MULTIPLY,  // *
     KEY_DIVIDE,    // /
     KEY_EQUAL,     // =
-    KEY_CLEAR,     // C
+    KEY_CLEAR,     // C/AC
     KEY_DOT,       // .
     KEY_BACKSPACE, // Del
     
     // Scientific functions
-    KEY_SIN,
-    KEY_COS,
-    KEY_TAN,
-    KEY_LOG,
-    KEY_LN,
-    KEY_SQRT,
-    KEY_POWER,
-    KEY_FACTORIAL,
-    KEY_PI,
-    KEY_E,
-    KEY_PAREN_LEFT,
-    KEY_PAREN_RIGHT,
+    KEY_SIN, KEY_COS, KEY_TAN,
+    KEY_LOG, KEY_LN, KEY_SQRT,
+    KEY_POWER, KEY_FACTORIAL, KEY_PI,
+    KEY_E, KEY_PAREN_LEFT, KEY_PAREN_RIGHT,
+    
+    // Casio fx-991 specific keys
+    KEY_SHIFT, KEY_ALPHA, KEY_MODE,
+    KEY_ON_AC, KEY_X_POW_Y, KEY_X_POW_MINUS1,
+    KEY_LOG10, KEY_EXP, KEY_PERCENT,
+    KEY_ANS, KEY_ENG, KEY_SETUP,
+    KEY_STAT, KEY_MATRIX, KEY_VECTOR,
+    KEY_CMPLX, KEY_BASE_N, KEY_EQUATION,
+    KEY_CALC, KEY_SOLVE, KEY_INTEGRATE,
+    KEY_DIFF, KEY_TABLE, KEY_RESET,
+    KEY_RAN_HASH, KEY_DRG, KEY_HYP,
+    KEY_STO, KEY_RCL, KEY_CONST,
+    KEY_CONV, KEY_FUNC, KEY_OPTN,
     
     KEY_MAX
 } key_code_t;

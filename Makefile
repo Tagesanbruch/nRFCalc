@@ -2,10 +2,11 @@
 # This manages building both the Zephyr application and the keypad simulator
 
 # Variables
-KEYPAD_SCRIPT = keypad_web.py
+KEYPAD_SCRIPT = web/app.py
 ZEPHYR_APP_DIR = build
-ZEPHYR_APP_EXE = $(ZEPHYR_APP_DIR)/zephyr/zephyr.exe
+ZEPHYR_APP_EXE = $(ZEPHYR_APP_DIR)/display/zephyr/zephyr.exe
 VENV_DIR = .venv
+WEB_DIR = web
 
 # Default target
 .PHONY: all
@@ -31,13 +32,53 @@ $(ZEPHYR_APP_EXE):
 run: zephyr
 	@echo "Starting calculator system..."
 	@echo "1. Starting Zephyr application in a new terminal..."
-	gnome-terminal --working-directory=$(shell pwd) -- ./$(ZEPHYR_APP_EXE)
-	@sleep 2
-	@echo "2. Starting Python keypad simulator..."
-	@echo "   Please ensure you have activated the virtual environment: source $(VENV_DIR)/bin/activate"
-	python $(KEYPAD_SCRIPT)
+	gnome-terminal --working-directory=$(shell pwd) --title="Zephyr Calculator" -- ./$(ZEPHYR_APP_EXE) || \
+	xterm -T "Zephyr Calculator" -e ./$(ZEPHYR_APP_EXE) || \
+	konsole --workdir $(shell pwd) --title "Zephyr Calculator" -e ./$(ZEPHYR_APP_EXE) || \
+	(echo "No suitable terminal emulator found. Starting Zephyr in background..." && ./$(ZEPHYR_APP_EXE) &)
+	@sleep 3
+	@echo "2. Starting CASIO fx-991ES PLUS Web Simulator..."
+	@echo "   Web interface will open at: http://localhost:5000"
+	@echo "   Press Ctrl+C to stop the web simulator"
+	@if [ -f "$(VENV_DIR)/bin/activate" ]; then \
+		echo "   Activating virtual environment..."; \
+		cd $(WEB_DIR) && . ../$(VENV_DIR)/bin/activate && python app.py; \
+	else \
+		echo "   Virtual environment not found. Using system Python..."; \
+		cd $(WEB_DIR) && python app.py; \
+	fi
 
-# Run only the Zephyr application
+# Run both applications in background
+.PHONY: run-bg
+run-bg: zephyr
+	@echo "Starting calculator system in background..."
+	@echo "1. Starting Zephyr application in background..."
+	./$(ZEPHYR_APP_EXE) &
+	@echo "   Zephyr PID: $$!"
+	@echo "2. Waiting for Zephyr to initialize..."
+	@sleep 3
+	@echo "3. Starting CASIO fx-991ES PLUS Web Simulator..."
+	@echo "   Web interface will open at: http://localhost:5000"
+	@echo "   Use 'make stop' to stop both applications"
+	@if [ -f "$(VENV_DIR)/bin/activate" ]; then \
+		echo "   Activating virtual environment..."; \
+		cd $(WEB_DIR) && . ../$(VENV_DIR)/bin/activate && python app.py; \
+	else \
+		echo "   Virtual environment not found. Using system Python..."; \
+		cd $(WEB_DIR) && python app.py; \
+	fi
+
+# Stop all running applications
+.PHONY: stop
+stop:
+	@echo "Stopping calculator applications..."
+	@echo "Killing Zephyr processes..."
+	@pkill -f "zephyr.exe" || echo "No Zephyr processes found"
+	@echo "Killing Python web server..."
+	@pkill -f "app.py" || echo "No Python web server found"
+	@echo "Cleaning up FIFO..."
+	@rm -f /tmp/calculator_keypad_fifo
+	@echo "All applications stopped."
 .PHONY: run-zephyr
 run-zephyr: zephyr
 	@echo "Starting Zephyr application..."
@@ -46,10 +87,14 @@ run-zephyr: zephyr
 # Run only the keypad simulator
 .PHONY: run-keypad
 run-keypad:
-	@echo "Starting Python keypad simulator..."
-	@echo "Please activate the virtual environment first if you haven't:"
-	@echo "source $(VENV_DIR)/bin/activate"
-	python $(KEYPAD_SCRIPT)
+	@echo "Starting CASIO fx-991ES PLUS Web Simulator..."
+	@if [ -f "$(VENV_DIR)/bin/activate" ]; then \
+		echo "Activating virtual environment..."; \
+		cd $(WEB_DIR) && . ../$(VENV_DIR)/bin/activate && python app.py; \
+	else \
+		echo "Virtual environment not found. Using system Python..."; \
+		cd $(WEB_DIR) && python app.py; \
+	fi
 
 # Clean build artifacts
 .PHONY: clean
@@ -78,9 +123,11 @@ help:
 	@echo "Targets:"
 	@echo "  all           - Build the Zephyr application (keypad is a script)"
 	@echo "  zephyr        - Build only the Zephyr application"
-	@echo "  run           - Run both the Zephyr app and the Python keypad simulator"
+	@echo "  run           - Run both apps (Zephyr in new terminal, web in foreground)"
+	@echo "  run-bg        - Run both apps in background mode"
 	@echo "  run-zephyr    - Build and run only the Zephyr application"
-	@echo "  run-keypad    - Run only the Python keypad simulator"
+	@echo "  run-keypad    - Run only the CASIO fx-991ES PLUS Web Simulator"
+	@echo "  stop          - Stop all running calculator applications"
 	@echo "  clean         - Clean all build artifacts and FIFO"
 	@echo "  clean-zephyr  - Clean only the Zephyr build directory"
 	@echo "  help          - Show this help message"

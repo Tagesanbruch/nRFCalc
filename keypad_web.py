@@ -16,7 +16,7 @@ import time
 
 class KeyCode(IntEnum):
     """与Zephyr应用程序匹配的键码"""
-    NONE = 0
+    KEY_NONE = 0
     
     # 数字键
     KEY0 = 1; KEY1 = 2; KEY2 = 3; KEY3 = 4; KEY4 = 5
@@ -28,23 +28,28 @@ class KeyCode(IntEnum):
     KEY_MULTIPLY = 13    # *
     KEY_DIVIDE = 14      # /
     KEY_EQUAL = 15       # =
-    KEY_CLEAR = 16       # C
+    KEY_CLEAR = 16       # C/AC
     KEY_DOT = 17         # .
     KEY_BACKSPACE = 18   # Del
     
     # 科学函数
-    KEY_SIN = 19
-    KEY_COS = 20
-    KEY_TAN = 21
-    KEY_LOG = 22
-    KEY_LN = 23
-    KEY_SQRT = 24
-    KEY_POWER = 25
-    KEY_FACTORIAL = 26
-    KEY_PI = 27
-    KEY_E = 28
-    KEY_PAREN_LEFT = 29
-    KEY_PAREN_RIGHT = 30
+    KEY_SIN = 19; KEY_COS = 20; KEY_TAN = 21
+    KEY_LOG = 22; KEY_LN = 23; KEY_SQRT = 24
+    KEY_POWER = 25; KEY_FACTORIAL = 26; KEY_PI = 27
+    KEY_E = 28; KEY_PAREN_LEFT = 29; KEY_PAREN_RIGHT = 30
+    
+    # Casio fx-991 特定按键
+    KEY_SHIFT = 31; KEY_ALPHA = 32; KEY_MODE = 33
+    KEY_ON_AC = 34; KEY_X_POW_Y = 35; KEY_X_POW_MINUS1 = 36
+    KEY_LOG10 = 37; KEY_EXP = 38; KEY_PERCENT = 39
+    KEY_ANS = 40; KEY_ENG = 41; KEY_SETUP = 42
+    KEY_STAT = 43; KEY_MATRIX = 44; KEY_VECTOR = 45
+    KEY_CMPLX = 46; KEY_BASE_N = 47; KEY_EQUATION = 48
+    KEY_CALC = 49; KEY_SOLVE = 50; KEY_INTEGRATE = 51
+    KEY_DIFF = 52; KEY_TABLE = 53; KEY_RESET = 54
+    KEY_RAN_HASH = 55; KEY_DRG = 56; KEY_HYP = 57
+    KEY_STO = 58; KEY_RCL = 59; KEY_CONST = 60
+    KEY_CONV = 61; KEY_FUNC = 62; KEY_OPTN = 63
 
 
 class FifoWriter:
@@ -80,327 +85,419 @@ class FifoWriter:
 app = Flask(__name__)
 fifo_writer = FifoWriter()
 
-# HTML模板
+# HTML模板 - Casio fx-991ES PLUS 样式
 HTML_TEMPLATE = """
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scientific Calculator Keypad</title>
+    <title>CASIO fx-991ES PLUS Simulator</title>
     <style>
         body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+            font-family: 'Courier New', monospace;
+            background: #f0f0f0;
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            color: white;
         }
         
-        .calculator-container {
-            background: #2d2d2d;
+        .calculator {
+            background: #2a2a2a;
             border-radius: 15px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            max-width: 500px;
-            width: 100%;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border: 3px solid #333;
+            width: 300px;
         }
         
-        .header {
+        .brand {
             text-align: center;
-            margin-bottom: 20px;
-        }
-        
-        .title {
-            color: #ff8c42;
-            font-size: 24px;
+            color: #fff;
             font-weight: bold;
-            margin-bottom: 10px;
+            font-size: 12px;
+            margin-bottom: 5px;
         }
         
-        .status {
-            color: #66ff66;
+        .model {
+            text-align: center;
+            color: #ffa500;
+            font-weight: bold;
+            font-size: 10px;
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+        
+        .display {
+            background: #8db388;
+            border: 2px solid #333;
+            border-radius: 5px;
+            height: 60px;
+            margin-bottom: 15px;
+            position: relative;
+            font-family: 'Courier New', monospace;
+            color: #000;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .display-text {
             font-size: 14px;
-            margin-bottom: 20px;
+            text-align: right;
+            font-weight: bold;
         }
         
         .keypad {
             display: grid;
             grid-template-columns: repeat(5, 1fr);
-            gap: 10px;
-            margin-top: 20px;
+            gap: 4px;
         }
         
-        .btn {
+        .key {
             border: none;
-            border-radius: 8px;
-            padding: 15px;
-            font-size: 16px;
+            border-radius: 3px;
+            font-family: 'Arial', sans-serif;
             font-weight: bold;
             cursor: pointer;
-            transition: all 0.2s;
-            outline: none;
-            user-select: none;
+            transition: all 0.1s;
+            position: relative;
+            padding: 8px 4px;
+            min-height: 35px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 10px;
+            line-height: 1.1;
         }
         
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        .key:active {
+            transform: scale(0.95);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.3);
         }
         
-        .btn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        /* 按键颜色分类 */
+        .key-shift { background: #ff6b35; color: white; }
+        .key-alpha { background: #4dabf7; color: white; }
+        .key-function { background: #666; color: white; }
+        .key-number { background: #555; color: white; }
+        .key-operator { background: #888; color: white; }
+        .key-special { background: #444; color: white; }
+        .key-clear { background: #d63031; color: white; }
+        
+        /* 二级功能标识 */
+        .shift-label {
+            font-size: 7px;
+            color: #ff6b35;
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            font-weight: normal;
         }
         
-        .btn-number {
-            background: #666666;
-            color: white;
-            font-size: 18px;
+        .alpha-label {
+            font-size: 7px;
+            color: #4dabf7;
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            font-weight: normal;
         }
         
-        .btn-number:hover {
-            background: #777777;
+        .main-label {
+            font-size: 10px;
+            font-weight: bold;
+            margin-top: 8px;
         }
         
-        .btn-operation {
-            background: #ff8c42;
-            color: white;
-            font-size: 18px;
-        }
-        
-        .btn-operation:hover {
-            background: #ff9c52;
-        }
-        
-        .btn-function {
-            background: #4a4a4a;
-            color: #ff8c42;
-            font-size: 14px;
-        }
-        
-        .btn-function:hover {
-            background: #5a5a5a;
-        }
-        
-        .btn-scientific {
-            background: #5a5a5a;
-            color: #66ff66;
-            font-size: 14px;
-        }
-        
-        .btn-scientific:hover {
-            background: #6a6a6a;
-        }
-        
-        .btn-clear {
-            background: #e74c3c;
-            color: white;
-            font-size: 16px;
-        }
-        
-        .btn-clear:hover {
-            background: #f75c4c;
-        }
-        
-        .btn-equal {
-            background: #27ae60;
-            color: white;
-            font-size: 20px;
-            grid-row: span 4;
-        }
-        
-        .btn-equal:hover {
-            background: #37be70;
-        }
-        
-        .btn-wide {
+        .key-large {
             grid-column: span 2;
         }
         
-        .feedback {
-            position: fixed;
-            top: 20px;
-            right: 20px;
+        .status-bar {
             background: #333;
-            color: #66ff66;
-            padding: 10px 20px;
-            border-radius: 5px;
-            display: none;
-            z-index: 1000;
-        }
-        
-        .feedback.error {
-            color: #e74c3c;
+            color: #fff;
+            padding: 5px;
+            margin-bottom: 10px;
+            border-radius: 3px;
+            font-size: 10px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="calculator-container">
-        <div class="header">
-            <div class="title">SCIENTIFIC CALCULATOR</div>
-            <div class="status" id="status">Ready - Waiting for Zephyr Calculator</div>
+    <div class="calculator">
+        <div class="brand">CASIO</div>
+        <div class="model">fx-991ES PLUS</div>
+        
+        <div class="display">
+            <div class="display-text" id="display">0</div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="mode-indicator">COMP</span>
+            <span style="float: right;" id="shift-alpha">・・・</span>
         </div>
         
         <div class="keypad">
-            <!-- 第1行：科学函数 -->
-            <button class="btn btn-function" data-key="KEY_SIN" data-text="sin">sin</button>
-            <button class="btn btn-function" data-key="KEY_COS" data-text="cos">cos</button>
-            <button class="btn btn-function" data-key="KEY_TAN" data-text="tan">tan</button>
-            <button class="btn btn-function" data-key="KEY_LOG" data-text="log">log</button>
-            <button class="btn btn-function" data-key="KEY_LN" data-text="ln">ln</button>
+            <!-- Row 1 -->
+            <button class="key key-shift" onclick="sendKey('KEY_SHIFT')">
+                <div class="main-label">SHIFT</div>
+            </button>
+            <button class="key key-alpha" onclick="sendKey('KEY_ALPHA')">
+                <div class="main-label">ALPHA</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_MODE')">
+                <div class="shift-label">SETUP</div>
+                <div class="main-label">MODE</div>
+            </button>
+            <button class="key key-clear" onclick="sendKey('KEY_ON_AC')">
+                <div class="shift-label">OFF</div>
+                <div class="main-label">ON</div>
+            </button>
+            <button class="key key-clear" onclick="sendKey('KEY_CLEAR')">
+                <div class="main-label">AC</div>
+            </button>
             
-            <!-- 第2行：更多科学函数 -->
-            <button class="btn btn-scientific" data-key="KEY_SQRT" data-text="√">√</button>
-            <button class="btn btn-scientific" data-key="KEY_POWER" data-text="x²">x²</button>
-            <button class="btn btn-scientific" data-key="KEY_FACTORIAL" data-text="x!">x!</button>
-            <button class="btn btn-scientific" data-key="KEY_PI" data-text="π">π</button>
-            <button class="btn btn-scientific" data-key="KEY_E" data-text="e">e</button>
+            <!-- Row 2 -->
+            <button class="key key-function" onclick="sendKey('KEY_X_POW_Y')">
+                <div class="shift-label">x√</div>
+                <div class="main-label">x<sup>y</sup></div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_LOG')">
+                <div class="shift-label">10<sup>x</sup></div>
+                <div class="main-label">log</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_LN')">
+                <div class="shift-label">e<sup>x</sup></div>
+                <div class="main-label">ln</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_PAREN_LEFT')">
+                <div class="shift-label">)</div>
+                <div class="main-label">(</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_PAREN_RIGHT')">
+                <div class="shift-label">)</div>
+                <div class="main-label">)</div>
+            </button>
             
-            <!-- 第3行：括号和清除 -->
-            <button class="btn btn-scientific" data-key="KEY_PAREN_LEFT" data-text="(">(</button>
-            <button class="btn btn-scientific" data-key="KEY_PAREN_RIGHT" data-text=")">)</button>
-            <button class="btn btn-clear btn-wide" data-key="KEY_CLEAR" data-text="AC">AC</button>
-            <button class="btn btn-operation" data-key="KEY_BACKSPACE" data-text="⌫">⌫</button>
+            <!-- Row 3 -->
+            <button class="key key-function" onclick="sendKey('KEY_SQRT')">
+                <div class="shift-label">x²</div>
+                <div class="main-label">√</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_SIN')">
+                <div class="shift-label">sin⁻¹</div>
+                <div class="main-label">sin</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_COS')">
+                <div class="shift-label">cos⁻¹</div>
+                <div class="main-label">cos</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_TAN')">
+                <div class="shift-label">tan⁻¹</div>
+                <div class="main-label">tan</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_BACKSPACE')">
+                <div class="shift-label">INS</div>
+                <div class="main-label">DEL</div>
+            </button>
             
-            <!-- 第4行：数字和运算 -->
-            <button class="btn btn-number" data-key="KEY7" data-text="7">7</button>
-            <button class="btn btn-number" data-key="KEY8" data-text="8">8</button>
-            <button class="btn btn-number" data-key="KEY9" data-text="9">9</button>
-            <button class="btn btn-operation" data-key="KEY_DIVIDE" data-text="÷">÷</button>
+            <!-- Row 4 -->
+            <button class="key key-function" onclick="sendKey('KEY_X_POW_MINUS1')">
+                <div class="shift-label">∛</div>
+                <div class="main-label">x⁻¹</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY7')">
+                <div class="alpha-label">G</div>
+                <div class="main-label">7</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY8')">
+                <div class="alpha-label">H</div>
+                <div class="main-label">8</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY9')">
+                <div class="alpha-label">I</div>
+                <div class="main-label">9</div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_DIVIDE')">
+                <div class="shift-label">÷R</div>
+                <div class="main-label">÷</div>
+            </button>
             
-            <!-- 等号按钮（跨4行） -->
-            <button class="btn btn-equal" data-key="KEY_EQUAL" data-text="=">=</button>
+            <!-- Row 5 -->
+            <button class="key key-function" onclick="sendKey('KEY_PERCENT')">
+                <div class="shift-label">%</div>
+                <div class="main-label">%</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY4')">
+                <div class="alpha-label">D</div>
+                <div class="main-label">4</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY5')">
+                <div class="alpha-label">E</div>
+                <div class="main-label">5</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY6')">
+                <div class="alpha-label">F</div>
+                <div class="main-label">6</div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_MULTIPLY')">
+                <div class="shift-label">×</div>
+                <div class="main-label">×</div>
+            </button>
             
-            <!-- 第5行 -->
-            <button class="btn btn-number" data-key="KEY4" data-text="4">4</button>
-            <button class="btn btn-number" data-key="KEY5" data-text="5">5</button>
-            <button class="btn btn-number" data-key="KEY6" data-text="6">6</button>
-            <button class="btn btn-operation" data-key="KEY_MULTIPLY" data-text="×">×</button>
+            <!-- Row 6 -->
+            <button class="key key-function" onclick="sendKey('KEY_ENG')">
+                <div class="shift-label">←</div>
+                <div class="main-label">ENG</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY1')">
+                <div class="alpha-label">A</div>
+                <div class="main-label">1</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY2')">
+                <div class="alpha-label">B</div>
+                <div class="main-label">2</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY3')">
+                <div class="alpha-label">C</div>
+                <div class="main-label">3</div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_MINUS')">
+                <div class="shift-label">-</div>
+                <div class="main-label">-</div>
+            </button>
             
-            <!-- 第6行 -->
-            <button class="btn btn-number" data-key="KEY1" data-text="1">1</button>
-            <button class="btn btn-number" data-key="KEY2" data-text="2">2</button>
-            <button class="btn btn-number" data-key="KEY3" data-text="3">3</button>
-            <button class="btn btn-operation" data-key="KEY_MINUS" data-text="-">-</button>
+            <!-- Row 7 -->
+            <button class="key key-function" onclick="sendKey('KEY_ANS')">
+                <div class="shift-label">DRG</div>
+                <div class="alpha-label">X</div>
+                <div class="main-label">Ans</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY0')">
+                <div class="alpha-label">SPACE</div>
+                <div class="main-label">0</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY_DOT')">
+                <div class="shift-label">,</div>
+                <div class="alpha-label">"</div>
+                <div class="main-label">.</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_EXP')">
+                <div class="shift-label">π</div>
+                <div class="alpha-label">:</div>
+                <div class="main-label">×10<sup>x</sup></div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_PLUS')">
+                <div class="shift-label">+</div>
+                <div class="main-label">+</div>
+            </button>
             
-            <!-- 第7行 -->
-            <button class="btn btn-number btn-wide" data-key="KEY0" data-text="0">0</button>
-            <button class="btn btn-number" data-key="KEY_DOT" data-text=".">.</button>
-            <button class="btn btn-operation" data-key="KEY_PLUS" data-text="+">+</button>
+            <!-- Row 8 -->
+            <button class="key key-operator key-large" onclick="sendKey('KEY_EQUAL')">
+                <div class="main-label">=</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_MATRIX')">
+                <div class="main-label">MATRIX</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_VECTOR')">
+                <div class="main-label">VECTOR</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_SOLVE')">
+                <div class="main-label">SOLVE</div>
+            </button>
         </div>
     </div>
     
-    <div class="feedback" id="feedback"></div>
-    
     <script>
-        // 键盘事件映射
-        const keyMap = {
-            '0': 'KEY0', '1': 'KEY1', '2': 'KEY2', '3': 'KEY3', '4': 'KEY4',
-            '5': 'KEY5', '6': 'KEY6', '7': 'KEY7', '8': 'KEY8', '9': 'KEY9',
-            '+': 'KEY_PLUS', '-': 'KEY_MINUS', '*': 'KEY_MULTIPLY', '/': 'KEY_DIVIDE',
-            '=': 'KEY_EQUAL', '.': 'KEY_DOT', 'c': 'KEY_CLEAR', 'C': 'KEY_CLEAR'
-        };
+        let shiftMode = false;
+        let alphaMode = false;
         
-        const specialKeys = {
-            'Enter': 'KEY_EQUAL',
-            'Backspace': 'KEY_BACKSPACE',
-            'Delete': 'KEY_CLEAR'
-        };
-        
-        // 发送按键到服务器
-        async function sendKey(keyCode, keyText) {
-            try {
-                const response = await fetch('/send_key', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        key_code: keyCode,
-                        key_text: keyText
-                    })
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    document.getElementById('status').textContent = 
-                        `Sent: ${keyText} → Zephyr Calculator`;
-                    document.getElementById('status').style.color = '#66ff66';
-                    showFeedback(`Sent: ${keyText}`, false);
-                } else {
-                    document.getElementById('status').textContent = 
-                        'Error: Failed to send to Zephyr Calculator';
-                    document.getElementById('status').style.color = '#e74c3c';
-                    showFeedback('Error: Failed to send key', true);
+        function sendKey(keyName) {
+            fetch('/send_key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({key: keyName})
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    updateDisplay(keyName);
+                    handleSpecialKeys(keyName);
                 }
-                
-                // 3秒后恢复默认状态
-                setTimeout(() => {
-                    document.getElementById('status').textContent = 
-                        'Ready - Waiting for Zephyr Calculator';
-                    document.getElementById('status').style.color = '#66ff66';
-                }, 3000);
-                
-            } catch (error) {
-                console.error('Error sending key:', error);
-                showFeedback('Network error', true);
+            })
+            .catch(error => console.error('Error:', error));
+        }
+        
+        function handleSpecialKeys(keyName) {
+            const indicator = document.getElementById('shift-alpha');
+            
+            if (keyName === 'KEY_SHIFT') {
+                shiftMode = !shiftMode;
+                updateModeIndicator();
+            } else if (keyName === 'KEY_ALPHA') {
+                alphaMode = !alphaMode;
+                updateModeIndicator();
+            } else {
+                // Other keys reset modes
+                if (shiftMode || alphaMode) {
+                    shiftMode = false;
+                    alphaMode = false;
+                    updateModeIndicator();
+                }
             }
         }
         
-        // 显示反馈消息
-        function showFeedback(message, isError = false) {
-            const feedback = document.getElementById('feedback');
-            feedback.textContent = message;
-            feedback.className = isError ? 'feedback error' : 'feedback';
-            feedback.style.display = 'block';
+        function updateModeIndicator() {
+            const indicator = document.getElementById('shift-alpha');
+            let text = '';
             
-            setTimeout(() => {
-                feedback.style.display = 'none';
-            }, 2000);
+            if (shiftMode) text += 'S ';
+            if (alphaMode) text += 'A ';
+            if (!shiftMode && !alphaMode) text = '・・・';
+            
+            indicator.textContent = text;
         }
         
-        // 按钮点击事件
-        document.querySelectorAll('.btn').forEach(button => {
-            button.addEventListener('click', () => {
-                const keyCode = button.dataset.key;
-                const keyText = button.dataset.text;
-                sendKey(keyCode, keyText);
-            });
-        });
+        function updateDisplay(keyName) {
+            // This would be updated by the actual calculator logic
+            console.log('Key pressed:', keyName);
+        }
         
-        // 键盘事件
-        document.addEventListener('keydown', (event) => {
-            let keyCode = null;
-            let keyText = event.key;
+        // Keyboard support
+        document.addEventListener('keydown', function(event) {
+            const keyMap = {
+                '0': 'KEY0', '1': 'KEY1', '2': 'KEY2', '3': 'KEY3', '4': 'KEY4',
+                '5': 'KEY5', '6': 'KEY6', '7': 'KEY7', '8': 'KEY8', '9': 'KEY9',
+                '+': 'KEY_PLUS', '-': 'KEY_MINUS', '*': 'KEY_MULTIPLY', '/': 'KEY_DIVIDE',
+                '=': 'KEY_EQUAL', 'Enter': 'KEY_EQUAL', '.': 'KEY_DOT',
+                'Backspace': 'KEY_BACKSPACE', 'Delete': 'KEY_CLEAR',
+                'Escape': 'KEY_CLEAR'
+            };
             
-            if (event.key in keyMap) {
-                keyCode = keyMap[event.key];
-            } else if (event.key in specialKeys) {
-                keyCode = specialKeys[event.key];
-                keyText = event.key === 'Enter' ? '=' : 
-                         event.key === 'Backspace' ? '⌫' : 'AC';
-            }
-            
-            if (keyCode) {
+            if (keyMap[event.key]) {
                 event.preventDefault();
-                sendKey(keyCode, keyText);
+                sendKey(keyMap[event.key]);
             }
-        });
-        
-        // 页面加载完成后聚焦，确保可以接收键盘事件
-        window.addEventListener('load', () => {
-            document.body.focus();
         });
     </script>
 </body>
 </html>
 """
+
+
+# Flask应用
+app = Flask(__name__)
+fifo_writer = FifoWriter()
 
 
 @app.route('/')
@@ -414,27 +511,26 @@ def send_key():
     """接收按键并发送到FIFO"""
     try:
         data = request.get_json()
-        key_code_name = data.get('key_code')
-        key_text = data.get('key_text')
+        key_name = data.get('key')
         
         # 将字符串转换为KeyCode枚举
         try:
-            key_code = KeyCode[key_code_name]
+            key_code = KeyCode[key_name]
         except KeyError:
-            return jsonify({'success': False, 'error': f'Invalid key code: {key_code_name}'})
+            return jsonify({'status': 'error', 'message': f'Invalid key: {key_name}'})
         
         # 发送到FIFO
         success = fifo_writer.send_key(key_code)
         
         return jsonify({
-            'success': success,
-            'key_code': key_code.value,
-            'key_text': key_text
+            'status': 'success' if success else 'error',
+            'key': key_name,
+            'value': key_code.value
         })
         
     except Exception as e:
         print(f"Error in send_key: {e}")
-        return jsonify({'success': False, 'error': str(e)})
+        return jsonify({'status': 'error', 'message': str(e)})
 
 
 def open_browser():

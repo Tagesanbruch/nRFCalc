@@ -16,20 +16,40 @@ typedef enum {
     STATE_INPUT_NORMAL,  // Normal input expression mode
     STATE_SHOW_RESULT,   // Displaying calculation result
     STATE_SHOW_ERROR,    // Displaying error message
-    STATE_MENU_MODE,     // Menu/function selection (future)
+    STATE_MENU_MODE,     // Menu/function selection
+    STATE_MATRIX_MODE,   // Matrix operations
+    STATE_VECTOR_MODE,   // Vector operations
+    STATE_SOLVE_MODE,    // Equation solving
+    STATE_SETUP_MODE,    // Settings/configuration
 } calculator_state_t;
+
+/**
+ * @brief Calculator mode flags
+ */
+typedef struct {
+    bool shift_mode;     // SHIFT key pressed
+    bool alpha_mode;     // ALPHA key pressed  
+    bool deg_mode;       // Degree mode (vs radians)
+    bool complex_mode;   // Complex number mode
+    bool stat_mode;      // Statistics mode
+} calculator_mode_t;
 
 /**
  * @brief Calculator data structure
  */
 struct calculator {
     calculator_state_t state;
-    char input_buffer[64];      // User input expression
+    calculator_mode_t mode;
+    char input_buffer[128];     // User input expression (increased size)
     int input_pos;              // Current position in input buffer
     char result_buffer[64];     // Calculation result display
     char error_buffer[64];      // Error message display
-    double last_result;         // Last calculated result
+    char status_buffer[32];     // Status line (COMP, STAT, etc.)
+    double last_result;         // Last calculated result (Ans)
+    double memory_x;            // Memory X variable
+    double memory_y;            // Memory Y variable
     bool new_number;            // Flag for new number input
+    int cursor_pos;             // Cursor position for editing
 };
 
 /**

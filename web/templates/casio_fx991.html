@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CASIO fx-991ES PLUS Simulator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/calculator.css') }}">
+</head>
+<body>
+    <div class="calculator">
+        <div class="brand">CASIO</div>
+        <div class="model">fx-991ES PLUS</div>
+        
+        <div class="display">
+            <div class="display-text" id="display">Det([4 5 56; 1 2 3])</div>
+        </div>
+        
+        <div class="status-bar">
+            <span id="mode-indicator">COMP</span>
+            <span style="float: right;" id="shift-alpha">・・・</span>
+        </div>
+        
+        <div class="keypad">
+            <!-- Row 1 -->
+            <button class="key key-shift" onclick="sendKey('KEY_SHIFT')">
+                <div class="main-label">SHIFT</div>
+            </button>
+            <button class="key key-alpha" onclick="sendKey('KEY_ALPHA')">
+                <div class="main-label">ALPHA</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_MODE')">
+                <div class="shift-label">SETUP</div>
+                <div class="main-label">MODE</div>
+            </button>
+            <button class="key key-clear" onclick="sendKey('KEY_ON_AC')">
+                <div class="shift-label">OFF</div>
+                <div class="main-label">ON</div>
+            </button>
+            <button class="key key-clear" onclick="sendKey('KEY_CLEAR')">
+                <div class="main-label">AC</div>
+            </button>
+            
+            <!-- Row 2 -->
+            <button class="key key-function" onclick="sendKey('KEY_X_POW_Y')">
+                <div class="shift-label">x√</div>
+                <div class="main-label">x<sup>y</sup></div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_LOG')">
+                <div class="shift-label">10<sup>x</sup></div>
+                <div class="main-label">log</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_LN')">
+                <div class="shift-label">e<sup>x</sup></div>
+                <div class="main-label">ln</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_PAREN_LEFT')">
+                <div class="shift-label">)</div>
+                <div class="main-label">(</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_PAREN_RIGHT')">
+                <div class="shift-label">)</div>
+                <div class="main-label">)</div>
+            </button>
+            
+            <!-- Row 3 -->
+            <button class="key key-function" onclick="sendKey('KEY_SQRT')">
+                <div class="shift-label">x²</div>
+                <div class="main-label">√</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_SIN')">
+                <div class="shift-label">sin⁻¹</div>
+                <div class="main-label">sin</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_COS')">
+                <div class="shift-label">cos⁻¹</div>
+                <div class="main-label">cos</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_TAN')">
+                <div class="shift-label">tan⁻¹</div>
+                <div class="main-label">tan</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_BACKSPACE')">
+                <div class="shift-label">INS</div>
+                <div class="main-label">DEL</div>
+            </button>
+            
+            <!-- Row 4 -->
+            <button class="key key-function" onclick="sendKey('KEY_X_POW_MINUS1')">
+                <div class="shift-label">∛</div>
+                <div class="main-label">x⁻¹</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY7')">
+                <div class="alpha-label">G</div>
+                <div class="main-label">7</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY8')">
+                <div class="alpha-label">H</div>
+                <div class="main-label">8</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY9')">
+                <div class="alpha-label">I</div>
+                <div class="main-label">9</div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_DIVIDE')">
+                <div class="shift-label">÷R</div>
+                <div class="main-label">÷</div>
+            </button>
+            
+            <!-- Row 5 -->
+            <button class="key key-function" onclick="sendKey('KEY_PERCENT')">
+                <div class="shift-label">%</div>
+                <div class="main-label">%</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY4')">
+                <div class="alpha-label">D</div>
+                <div class="main-label">4</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY5')">
+                <div class="alpha-label">E</div>
+                <div class="main-label">5</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY6')">
+                <div class="alpha-label">F</div>
+                <div class="main-label">6</div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_MULTIPLY')">
+                <div class="shift-label">×</div>
+                <div class="main-label">×</div>
+            </button>
+            
+            <!-- Row 6 -->
+            <button class="key key-function" onclick="sendKey('KEY_ENG')">
+                <div class="shift-label">←</div>
+                <div class="main-label">ENG</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY1')">
+                <div class="alpha-label">A</div>
+                <div class="main-label">1</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY2')">
+                <div class="alpha-label">B</div>
+                <div class="main-label">2</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY3')">
+                <div class="alpha-label">C</div>
+                <div class="main-label">3</div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_MINUS')">
+                <div class="shift-label">-</div>
+                <div class="main-label">-</div>
+            </button>
+            
+            <!-- Row 7 -->
+            <button class="key key-function" onclick="sendKey('KEY_ANS')">
+                <div class="shift-label">DRG</div>
+                <div class="alpha-label">X</div>
+                <div class="main-label">Ans</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY0')">
+                <div class="alpha-label">SPACE</div>
+                <div class="main-label">0</div>
+            </button>
+            <button class="key key-number" onclick="sendKey('KEY_DOT')">
+                <div class="shift-label">,</div>
+                <div class="alpha-label">"</div>
+                <div class="main-label">.</div>
+            </button>
+            <button class="key key-function" onclick="sendKey('KEY_EXP')">
+                <div class="shift-label">π</div>
+                <div class="alpha-label">:</div>
+                <div class="main-label">×10<sup>x</sup></div>
+            </button>
+            <button class="key key-operator" onclick="sendKey('KEY_PLUS')">
+                <div class="shift-label">+</div>
+                <div class="main-label">+</div>
+            </button>
+            
+            <!-- Row 8 -->
+            <button class="key key-operator key-large" onclick="sendKey('KEY_EQUAL')">
+                <div class="main-label">=</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_MATRIX')">
+                <div class="main-label">MATRIX</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_VECTOR')">
+                <div class="main-label">VECTOR</div>
+            </button>
+            <button class="key key-special" onclick="sendKey('KEY_SOLVE')">
+                <div class="main-label">SOLVE</div>
+            </button>
+        </div>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/calculator.js') }}"></script>
+</body>
+</html>

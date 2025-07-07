@@ -21,7 +21,9 @@ void calculator_init(struct calculator *calc)
 {
     memset(calc, 0, sizeof(*calc));
     calc->state = STATE_INPUT_NORMAL;
+    calc->mode.deg_mode = true;  // Default to degree mode
     strcpy(calc->input_buffer, "0");
+    strcpy(calc->status_buffer, "COMP");
     calc->input_pos = 1;
     calc->new_number = true;
 }
